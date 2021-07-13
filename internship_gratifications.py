@@ -30,8 +30,8 @@ local_area = "metropole"
 # Input Verification
 
 if not len(sys.argv) >= 6:
-    print("Command format is incorrect.")
-    print("Example command : py internship_gratifications.py 13/07/2021 20/10/2021 5 7 3.9")
+    print("Commande incorrecte.")
+    print("Example de commande : py internship_gratifications.py 13/07/2021 20/10/2021 5 7 3.9")
     exit()
 
 try:
@@ -39,7 +39,7 @@ try:
     # date_begin_str = "28/09/2020"
     date_begin = datetime.strptime(date_begin_str, '%d/%m/%Y')
 except Exception as e:
-    print("Date format is incorrect, use DD/MM/YYYY")
+    print("Le format de date est incorrecte, merci d'utiliser DD/MM/YYYY")
     exit()
 
 try:
@@ -47,11 +47,11 @@ try:
     # date_end_str = "15/01/2021"
     date_end = datetime.strptime(date_end_str, '%d/%m/%Y')
 except Exception as e:
-    print("Date format is incorrect, use DD/MM/YYYY")
+    print("Le format de date est incorrecte, merci d'utiliser DD/MM/YYYY")
     exit()
 
 if date_begin > date_end:
-    print("End date must be after begin date")
+    print("La date de fin doit être après celle de début")
     exit()
 
 try:
@@ -60,7 +60,7 @@ try:
     if days_per_week < 0:
         raise Exception("NotPositive")
 except Exception as e:
-    print("Days per week should be a positive integer")
+    print("Le nombre de jours de stage par semaine doit être un entier positif")
     exit()
 
 try:
@@ -69,7 +69,7 @@ try:
     if hours_per_day < 0:
         raise Exception("NotPositive")
 except Exception as e:
-    print("Hours per day should be a positive integer")
+    print("Le nombre d'heures de stage par jour doit être un entier positif")
     exit()
 
 try:
@@ -77,7 +77,7 @@ try:
     if gratification < 0:
         raise Exception("NotPositive")
 except Exception as e:
-    print("Gratification should be a positive float")
+    print("La gratification doit être indiquée comme un flottant positif")
     exit()
 
 
@@ -97,8 +97,7 @@ if not os.path.exists(filename):
         fw.write(res.content)
         fw.close()
     except Exception as e:
-        print("Public holidays couldn't be downloaded for some reason.")
-        print("Dates may therefore be wrong")
+        print("Les jours fériés ne peuvent pas être téléchargés.\nLes dates données ici peuvent être supérieures à la réalité")
 
 public_holidays_local = {}
 if os.path.exists(filename):
@@ -119,7 +118,7 @@ if days_per_week < 5:
             elif day.startswith("+") and day[1:].lower() in not_working_days:
                 del not_working_days[day[1:]]
     except Exception as e:
-        print("Days per week < 5 but not working days not specified or wrong format. Add \"+Saturday,-Monday\" at end line for example if you work on Saturdays and not on Mondays ")
+        print("Moins de 5j de stage par semaine, mais aucun jour de non travail spécifié. . Ajouter \"+Saturday,-Monday\" en fin de ligne de commande pour préciser que vous travailler les Samedis, mais pas les Luindis.")
 
 # gratification = 3.9
 
@@ -156,14 +155,14 @@ days_off = 0 if working_hours_count <=44*7 else working_hours_count/(22*7)*2.5
 
 # Output
 
-print(f"\n==== FROM {date_begin_str} TO {date_end_str}")
-print(f"==== {hours_per_day} hours a day | {gratification}€ per hour")
-print(f"==== Working days  : {','.join(working_days_name)}\n")
-print(f"> Working days count            : {working_days}")
-print(f"> Working hours count           : {working_hours_count}")
-print(f"> Estimated gratification total : {gratification_count:.1f}")
-print(f"> Estimated days off count      : {days_off:.1f}")
+print(f"\n==== Du {date_begin_str} Au {date_end_str}")
+print(f"==== {hours_per_day} heures par jour | {gratification}€ par heure")
+print(f"==== Jours de stage  : {','.join(working_days_name)}\n")
+print(f"> Total de jours de stage                  : {working_days}")
+print(f"> Total de heures de stage                 : {working_hours_count}")
+print(f"> Estimation gratification totale          : {gratification_count:.1f}")
+print(f"> Estimation du nombre de jours de congé   : {days_off:.1f}")
 
-print(f"\n> Completed days so far         : {completed_days/working_days*100:.1f}% ({completed_days}/{working_days} | {working_days-completed_days} left)")
-print(f"> Completed hours so far        : {completed_hours_count/working_hours_count*100:.1f}% ({completed_hours_count}/{working_hours_count} | {working_hours_count-completed_hours_count} left)")
-print("\nDisclaimer: Gratification and days off counts are estimations, and might differs depending on your employer")
+print(f"\n> Progression jours de stage               : {completed_days/working_days*100:.1f}% ({completed_days}/{working_days} | {working_days-completed_days} restants)")
+print(f"> Progression heures de stage              : {completed_hours_count/working_hours_count*100:.1f}% ({completed_hours_count}/{working_hours_count} | {working_hours_count-completed_hours_count} restantes)")
+print("\nDisclaimer: La gratification et les jours de congés sont des estimations, et peuvent différer en fonction de l'employeur.")
