@@ -158,8 +158,8 @@ days_off = 0 if working_hours_count <=44*7 else working_hours_count/(22*7)*2.5
 print(f"\n==== Du {date_begin_str} Au {date_end_str}")
 print(f"==== {hours_per_day} heures par jour | {gratification}€ par heure")
 print(f"==== Jours de stage  : {','.join(working_days_name)}\n")
-print(f"> Total de jours de stage                  : {working_days}")
-print(f"> Total de heures de stage                 : {working_hours_count}")
+print(f"> Nombre total de jours de stage           : {working_days}")
+print(f"> Nombre total d'heures de stage           : {working_hours_count}")
 print(f"> Estimation gratification totale          : {gratification_count:.1f}")
 print(f"> Estimation du nombre de jours de congé   : {days_off:.1f}")
 
