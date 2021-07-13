@@ -30,12 +30,12 @@ Devant le nom du jour, indiquer `-` pour un jour de non travail exceptionnel et 
 
 Exemple : `Ajouter \"+Saturday,-Monday\" en fin de ligne, si exceptionnellement vous travaillez le Samedi et ne travaillez pas le Lundi.`
 
+## Exemple d'utilisation
+![Exemple d'utilisation](https://github.com/fm16191/internship_gratifications/blob/master/usage.png?raw=true)
+
 ## Notes.
 Au dessus de 2 mois de stage (équivalent de 44 jours de 7 heures de stage), une gratification de minimum 3.9€ à l'heure est obligatoire
 
 Au dessus de 2 mois de stage, la possibilité de pouvoir poser des jours de congés est obligatoire, mais leur rémunération est facultative.
 
 En savoir plus sur les articles du [service-public.fr](https://www.service-public.fr/professionnels-entreprises/vosdroits/F20559) ou [travail-emploi.gouv.fr](https://travail-emploi.gouv.fr/emploi-et-insertion/mesures-jeunes/article/les-stages-etudiants-en-milieu-professionnel)
-
-## Exemple d'utilisation
-![Exemple d'utilisation](https://github.com/fm16191/internship_gratifications/blob/master/usage.png?raw=true)
