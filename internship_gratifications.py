@@ -1,4 +1,4 @@
-import sys
+import sys, argparse
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
@@ -28,57 +28,48 @@ local_area = "metropole"
 ######################## END FOR FRENCH LOCAL AREA ########################
 
 # Input Verification
+parser = argparse.ArgumentParser(description="Outil de calcul du nombre d'heures de travail et de la gratification résultante")
+parser.add_argument("date_debut", type=lambda s: datetime.strptime(s, '%d/%m/%Y'), help="date de début de stage (JJ/MM/AAAA)")
+parser.add_argument("date_fin", type=lambda s: datetime.strptime(s, '%d/%m/%Y'), help="date de fin de stage (JJ/MM/AAAA)")
 
-if not len(sys.argv) >= 6:
-    print("Commande incorrecte.")
-    print("Example de commande : py internship_gratifications.py 13/07/2021 20/10/2021 5 7 3.9")
-    exit()
+parser.add_argument("-v", "--verbose", action="store_true", help="increase output verbosity")
+parser.add_argument("-days", type=int, default=5, help="nombre de jours de stage par semaine (%(default)s par défaut)")
+parser.add_argument("-hours", type=float, default=7, help="nombre d'heures de stage par jour (%(default)s par défaut)")
+parser.add_argument("-grat", type=float, default=3.9, help="gratification horaire du stage (%(default)s par défaut)")
+parser.add_argument("-ex", nargs='+', help="jours exceptionnels de travail si existants")
 
-try:
-    date_begin_str = sys.argv[1]
-    # date_begin_str = "28/09/2020"
-    date_begin = datetime.strptime(date_begin_str, '%d/%m/%Y')
-except Exception as e:
-    print("Le format de date est incorrecte, merci d'utiliser DD/MM/YYYY")
-    exit()
 
-try:
-    date_end_str = sys.argv[2]
-    # date_end_str = "15/01/2021"
-    date_end = datetime.strptime(date_end_str, '%d/%m/%Y')
-except Exception as e:
-    print("Le format de date est incorrecte, merci d'utiliser DD/MM/YYYY")
-    exit()
-
-if date_begin > date_end:
-    print("La date de fin doit être après celle de début")
-    exit()
+args = parser.parse_args()
+if args.date_debut < args.date_fin:
+    date_begin = args.date_debut
+    date_end = args.date_fin
+else:
+    date_end = args.date_debut
+    date_begin = args.date_fin
 
 try:
-    # days_per_week = 35
-    days_per_week = int(sys.argv[3])
-    if days_per_week < 0:
+    days_per_week = args.days
+    if days_per_week < 0 or days_per_week > 7:
         raise Exception("NotPositive")
 except Exception as e:
-    print("Le nombre de jours de stage par semaine doit être un entier positif")
-    exit()
+    print("Le nombre de jours de stage par semaine doit être un entier positif et inférieur à 8")
+    sys.exit(1)
 
 try:
-    # hours_per_day = 7
-    hours_per_day = int(sys.argv[4])
+    hours_per_day = args.hours
     if hours_per_day < 0:
         raise Exception("NotPositive")
 except Exception as e:
     print("Le nombre d'heures de stage par jour doit être un entier positif")
-    exit()
+    sys.exit(1)
 
 try:
-    gratification = float(sys.argv[5])
+    gratification = args.grat
     if gratification < 0:
         raise Exception("NotPositive")
 except Exception as e:
     print("La gratification doit être indiquée comme un flottant positif")
-    exit()
+    sys.exit(1)
 
 
 # Get local public holidays during years of the internship
@@ -128,7 +119,7 @@ if days_per_week < 5:
             elif day.startswith("+") and day[1:].lower() in not_working_days:
                 del not_working_days[day[1:]]
     except Exception as e:
-        print("Moins de 5j de stage par semaine, mais aucun jour de non travail spécifié. . Ajouter \"+Saturday,-Monday\" en fin de ligne de commande pour préciser que vous travailler les Samedis, mais pas les Luindis.")
+        print("Moins de 5j de stage par semaine, mais aucun jour de non travail spécifié.\n > Ajouter \"+Saturday,-Monday\" en fin de ligne de commande pour préciser que vous travailler les Samedis, mais pas les Lundis.")
 
 # gratification = 3.9
 
@@ -169,14 +160,13 @@ days_off = 0 if working_hours_count <=44*7 else working_hours_count/(22*7)*2.5
 
 # Output
 
-verbose = True
-print(f"\n==== Du {date_begin_str} Au {date_end_str}")
+print(f"\n==== Du {date_begin.strftime('%m/%d/%Y')} Au {date_end.strftime('%m/%d/%Y')}")
 print(f"==== {hours_per_day} heures par jour | {gratification}€ par heure")
 print(f"==== Jours de stage  : {','.join(working_days_name)}\n")
 print(f"> Nombre total de jours de stage           : {working_days}")
 print(f"> Nombre total d'heures de stage           : {working_hours_count}")
 print(f"> Jours feriés pendant votre stage         : {free_days_off} (Relancez avec -v pour voir le détail)")
-if verbose:
+if args.verbose:
     for day_off in free_days_off_dict:
         print('\t\033[30;1m' + day_off + '\033[0m')
 
