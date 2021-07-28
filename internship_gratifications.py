@@ -81,30 +81,40 @@ except Exception as e:
     exit()
 
 
-# Get local public holidays
+# Get local public holidays during years of the internship
 
-filename = f"{local_area}_{datetime.today().year}.json"
+def get_local_public_holidays(local_area, year):
+    """ Store it into a file local public holidays for a year in an area if it doesn't already exist (request on api.gouv.fr) """
+    filename = f"{local_area}_{year}.json"
 
-if not os.path.exists(filename):
-    print(f"Loading public holidays for {local_area}_{datetime.today().year}")
+    if not os.path.exists(filename):
+        print(f"Loading public holidays for {local_area}_{year}")
 
-    link = f"https://calendrier.api.gouv.fr/jours-feries/{filename.replace('_','/')}"
-    try:
-        res = requests.get(link, allow_redirects=True)
-        if not res.status_code == 200:
-            raise Exception(res.status_code)
-        fw = open(filename, "wb")
-        fw.write(res.content)
-        fw.close()
-    except Exception as e:
-        print("Les jours fériés ne peuvent pas être téléchargés.\nLes dates données ici peuvent être supérieures à la réalité")
+        link = f"https://calendrier.api.gouv.fr/jours-feries/{filename.replace('_','/')}"
+        try:
+            res = requests.get(link, allow_redirects=True)
+            if not res.status_code == 200:
+                raise Exception(res.status_code)
+            fw = open(filename, "wb")
+            fw.write(res.content)
+            fw.close()
+        except Exception as e:
+            print("Les jours fériés ne peuvent pas être téléchargés.\nLes dates données ici peuvent être supérieures à la réalité")
 
+
+start_int_year = date_begin.year
+end_int_year = date_end.year
 public_holidays_local = {}
-if os.path.exists(filename):
-    fo = open(filename, "r")
-    public_holidays_local = json.loads("".join(fo.readlines()))
-    fo.close()
+while start_int_year <= end_int_year:
+    filename = f"{local_area}_{start_int_year}.json"
+    get_local_public_holidays(local_area, start_int_year)
 
+    if os.path.exists(filename):
+        fo = open(filename, "r")
+        public_holidays_local.update(json.loads("".join(fo.readlines())))
+        fo.close()
+
+    start_int_year += 1
 
 # Gratification calculation
 
@@ -132,15 +142,19 @@ for day in all_days:
 working_days = 0
 completed_days = 0
 hours = 0
+free_days_off = 0
+free_days_off_dict = []
 
 for i in range((date_end - date_begin).days + 1):
     day = date(date_begin.year, date_begin.month, date_begin.day) + timedelta(days=i)
     day_name = day.strftime("%A")
     day_strftime = day.strftime("%Y-%m-%d")
-    if day_strftime in public_holidays_local:
-        continue
     # print(day_name)
     if not day_name.lower() in not_working_days :
+        if day_strftime in public_holidays_local:
+            free_days_off_dict.append(f"{public_holidays_local[day_strftime]} {day_strftime[:4]}")
+            free_days_off += 1
+            continue
         hours += hours_per_day
         working_days += 1
         if day < date.today():
@@ -155,11 +169,17 @@ days_off = 0 if working_hours_count <=44*7 else working_hours_count/(22*7)*2.5
 
 # Output
 
+verbose = True
 print(f"\n==== Du {date_begin_str} Au {date_end_str}")
 print(f"==== {hours_per_day} heures par jour | {gratification}€ par heure")
 print(f"==== Jours de stage  : {','.join(working_days_name)}\n")
 print(f"> Nombre total de jours de stage           : {working_days}")
 print(f"> Nombre total d'heures de stage           : {working_hours_count}")
+print(f"> Jours feriés pendant votre stage         : {free_days_off} (Relancez avec -v pour voir le détail)")
+if verbose:
+    for day_off in free_days_off_dict:
+        print('\t\033[30;1m' + day_off + '\033[0m')
+
 print(f"> Estimation gratification totale          : {gratification_count:.1f}")
 print(f"> Estimation du nombre de jours de congé   : {days_off:.1f}")
 
