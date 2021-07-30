@@ -1,4 +1,4 @@
-import sys
+import sys, argparse
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
@@ -24,123 +24,107 @@ local_area = "metropole"
 # local_area = "wallis-et-futuna"
 
 # Local area is needed for public holidays dates
+def get_local_public_holidays(local_area, year):
+    """ Store it into a file local public holidays for a year in an area 
+        if it doesn't already exist (request on api.gouv.fr) """
+    filename = f"{local_area}_{year}.json"
+
+    if not os.path.exists(filename):
+        if args.verbose: print(f"\033[;2mLoading public holidays for {local_area}_{year}...\033[0m")
+
+        link = f"https://calendrier.api.gouv.fr/jours-feries/{filename.replace('_','/')}"
+        try:
+            res = requests.get(link, allow_redirects=True)
+            if not res.status_code == 200:
+                raise Exception(res.status_code)
+            fw = open(filename, "wb")
+            fw.write(res.content)
+            fw.close()
+        except Exception as e:
+            print(f"\033[33mAttention :\033[0m les jours fériés pour l'année {year} ne peuvent pas être téléchargés.")
 
 ######################## END FOR FRENCH LOCAL AREA ########################
 
-# Input Verification
+# Parser initialization
+parser = argparse.ArgumentParser(description="Outil de calcul du nombre d'heures de travail et de la gratification résultante.")
+parser.add_argument("date_debut", type=lambda s: datetime.strptime(s, '%d/%m/%Y'), help="date de début de stage (JJ/MM/AAAA)")
+parser.add_argument("date_fin", type=lambda s: datetime.strptime(s, '%d/%m/%Y'), help="date de fin de stage (JJ/MM/AAAA)")
 
-if not len(sys.argv) >= 6:
-    print("Commande incorrecte.")
-    print("Example de commande : py internship_gratifications.py 13/07/2021 20/10/2021 5 7 3.9")
-    exit()
+parser.add_argument("-v", "--verbose", action="store_true", help="increase output verbosity")
+parser.add_argument("-hours", type=float, default=7, metavar='X', help="nombre d'heures de stage par jour (%(default)sh/j par défaut)")
+parser.add_argument("-grat", type=float, default=3.9, metavar='X.X', help="gratification horaire du stage (%(default)s€/h par défaut)")
+parser.add_argument("-add", nargs='+', choices={'saturday', 'sunday'}, metavar='weekday', help="ajouter des jours exceptionnels de travail (saturday, sunday)")
+parser.add_argument("-rm", nargs='+', choices={'monday', 'tuesday', 'wednesday', 'thursday', 'friday'}, metavar='weekday', help="retirer des jours de travail en semaine (monday, tuesday, ...)")
 
-try:
-    date_begin_str = sys.argv[1]
-    # date_begin_str = "28/09/2020"
-    date_begin = datetime.strptime(date_begin_str, '%d/%m/%Y')
-except Exception as e:
-    print("Le format de date est incorrecte, merci d'utiliser DD/MM/YYYY")
-    exit()
-
-try:
-    date_end_str = sys.argv[2]
-    # date_end_str = "15/01/2021"
-    date_end = datetime.strptime(date_end_str, '%d/%m/%Y')
-except Exception as e:
-    print("Le format de date est incorrecte, merci d'utiliser DD/MM/YYYY")
-    exit()
-
-if date_begin > date_end:
-    print("La date de fin doit être après celle de début")
-    exit()
-
-try:
-    # days_per_week = 35
-    days_per_week = int(sys.argv[3])
-    if days_per_week < 0:
-        raise Exception("NotPositive")
-except Exception as e:
-    print("Le nombre de jours de stage par semaine doit être un entier positif")
-    exit()
-
-try:
-    # hours_per_day = 7
-    hours_per_day = int(sys.argv[4])
-    if hours_per_day < 0:
-        raise Exception("NotPositive")
-except Exception as e:
-    print("Le nombre d'heures de stage par jour doit être un entier positif")
-    exit()
-
-try:
-    gratification = float(sys.argv[5])
-    if gratification < 0:
-        raise Exception("NotPositive")
-except Exception as e:
-    print("La gratification doit être indiquée comme un flottant positif")
-    exit()
+# Input checking
+args = parser.parse_args()
+if args.date_debut < args.date_fin:
+    date_begin = args.date_debut
+    date_end = args.date_fin
+else:
+    date_end = args.date_debut
+    date_begin = args.date_fin
 
 
-# Get local public holidays
+hours_per_day = args.hours
+if hours_per_day <= 0:
+    print("\033[31mErreur :\033[0m le nombre d'heures de stage par jour doit être un entier positif")
+    sys.exit(1)
 
-filename = f"{local_area}_{datetime.today().year}.json"
+gratification = args.grat
+if gratification < 0:
+    print("\033[31mErreur :\033[0m la gratification doit être indiquée comme un flottant positif")
+    sys.exit(1)
 
-if not os.path.exists(filename):
-    print(f"Loading public holidays for {local_area}_{datetime.today().year}")
-
-    link = f"https://calendrier.api.gouv.fr/jours-feries/{filename.replace('_','/')}"
-    try:
-        res = requests.get(link, allow_redirects=True)
-        if not res.status_code == 200:
-            raise Exception(res.status_code)
-        fw = open(filename, "wb")
-        fw.write(res.content)
-        fw.close()
-    except Exception as e:
-        print("Les jours fériés ne peuvent pas être téléchargés.\nLes dates données ici peuvent être supérieures à la réalité")
-
-public_holidays_local = {}
-if os.path.exists(filename):
-    fo = open(filename, "r")
-    public_holidays_local = json.loads("".join(fo.readlines()))
-    fo.close()
-
-
-# Gratification calculation
-
-not_working_days = ["saturday", "sunday"]
-if days_per_week < 5:
-    try:
-        days_str = sys.argv[6].split(",")
-        for day in days_str:
-            if day.startswith("-"):
-                not_working_days.append(day[1:])
-            elif day.startswith("+") and day[1:].lower() in not_working_days:
-                del not_working_days[day[1:]]
-    except Exception as e:
-        print("Moins de 5j de stage par semaine, mais aucun jour de non travail spécifié. . Ajouter \"+Saturday,-Monday\" en fin de ligne de commande pour préciser que vous travailler les Samedis, mais pas les Luindis.")
-
-# gratification = 3.9
-
+# Working weekdays 
 all_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-
+not_working_days = ["saturday", "sunday"] # Default week-end
 working_days_name = []
+
+if args.add:
+    for ex_day in args.add:
+        not_working_days.remove(ex_day)
+if args.rm:
+    not_working_days.extend(args.rm)
+
 for day in all_days:
     if not day in not_working_days:
         working_days_name.append(day)
 
+
+# Get local public holidays during years of the internship
+start_int_year = date_begin.year
+end_int_year = date_end.year
+public_holidays_local = {}
+while start_int_year <= end_int_year:
+    filename = f"{local_area}_{start_int_year}.json"
+    get_local_public_holidays(local_area, start_int_year)
+
+    if os.path.exists(filename):
+        fo = open(filename, "r")
+        public_holidays_local.update(json.loads("".join(fo.readlines())))
+        fo.close()
+
+    start_int_year += 1
+
+
+# Gratification calculation
+
 working_days = 0
 completed_days = 0
 hours = 0
+free_days_off = 0
+free_days_off_dict = []
 
 for i in range((date_end - date_begin).days + 1):
     day = date(date_begin.year, date_begin.month, date_begin.day) + timedelta(days=i)
     day_name = day.strftime("%A")
     day_strftime = day.strftime("%Y-%m-%d")
-    if day_strftime in public_holidays_local:
-        continue
-    # print(day_name)
     if not day_name.lower() in not_working_days :
+        if day_strftime in public_holidays_local:
+            free_days_off_dict.append(f"{public_holidays_local[day_strftime]} {day_strftime[:4]}")
+            free_days_off += 1
+            continue
         hours += hours_per_day
         working_days += 1
         if day < date.today():
@@ -155,14 +139,23 @@ days_off = 0 if working_hours_count <=44*7 else working_hours_count/(22*7)*2.5
 
 # Output
 
-print(f"\n==== Du {date_begin_str} Au {date_end_str}")
+print(f"\n==== Du {date_begin.strftime('%m/%d/%Y')} Au {date_end.strftime('%m/%d/%Y')}")
 print(f"==== {hours_per_day} heures par jour | {gratification}€ par heure")
-print(f"==== Jours de stage  : {','.join(working_days_name)}\n")
+print(f"==== Jours de stage  : {', '.join(working_days_name)} ({len(working_days_name)} jours sur 7)\n")
 print(f"> Nombre total de jours de stage           : {working_days}")
 print(f"> Nombre total d'heures de stage           : {working_hours_count}")
+
+if free_days_off:
+    print(f"> Jours feriés pendant votre stage         : {free_days_off}")
+    if args.verbose:
+        for day_off in free_days_off_dict:
+            print('\t\033[;2m' + day_off + '\033[0m')
+    else:   print("\t\033[;2m(Relancez avec l'option -v pour voir le détail)\033[0m")
+
 print(f"> Estimation gratification totale          : {gratification_count:.1f}")
 print(f"> Estimation du nombre de jours de congé   : {days_off:.1f}")
 
 print(f"\n> Progression jours de stage               : {completed_days/working_days*100:.1f}% ({completed_days}/{working_days} | {working_days-completed_days} restants)")
 print(f"> Progression heures de stage              : {completed_hours_count/working_hours_count*100:.1f}% ({completed_hours_count}/{working_hours_count} | {working_hours_count-completed_hours_count} restantes)")
 print("\nDisclaimer: La gratification et les jours de congés sont des estimations, et peuvent différer en fonction de l'employeur.")
+print("\tPlus d'informations sur \033[;2mhttps://www.service-public.fr/professionnels-entreprises/vosdroits/F32131\033[0m")

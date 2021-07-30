@@ -1,41 +1,53 @@
 # Internship Gratification Calculator
+
 **Version 1.0**
 
-Outil de calcul du nombre d'heures de travail et de la gratification résultante
+Outil de calcul du nombre d'heures de travail et de la gratification résultante.
 
-## Requis
+## Prérequis et dépendances
+
 - Python 3+
-
-## Dépendances
-- Python modules `sys`, `datetime`
+- Modules Python `sys`, `datetime`, `argparse`, `json`, `requests`
 
 ## Utilisation
+
 Télécharger le projet, et ouvrir le dossier en invite de commande
+
 ```shell
-py internship_gratifications.py [date_debut] [date_fin] [nombre_jours_par_semaine] [nombre_heures_par_semaine] [gratification] *[jours_exceptionnels]*
+py internship_gratifications.py date_debut date_fin [-h] [-v] [-hours X] [-grat X.X] 
+                                                    [-add weekday ...] [-rm weekday ...]
 ```
-`date_debut`                   : Date de début de stage. Format JJ/MM/AAAA *(ex: 13/07/2021)*
 
-`date_fin`                     : Date de fin de stage. Format JJ/MM/AAAA *(ex: 13/07/2021)*
+### Arguments requis
 
-`nombre_jours_par_semaine`     : Nombre de jours de stage par semaine *(ex: 5)*
+- `date_debut`  : Date de début de stage au format `JJ/MM/AAAA` *(ex: 13/07/2021)*.
+- `date_fin`    : Date de fin de stage au format `JJ/MM/AAAA` *(ex: 13/07/2021)*.
 
-`nombre_heures_par_semaine`    : Nombre d'heures de stage par jour *(ex: 5)*
+### Arguments optionnels
 
-`gratification`                : Gratification du stage *(ex: 3.9)*
+- `-h`               : Affiche l'aide à l'utilisation
+- `-v`               : Exécution en mode verbeux
+- `-hours X`         : Nombre d'heures de stage par jour *(7h/j par défaut)*
+- `-grat X.X`        : Gratification horaire du stage *(3.9€/h par défaut)*
+- `-add weekday ...` : ajouter des jours exceptionnels de travail (saturday, sunday)
+- `-rm weekday ...`  : retirer des jours de travail en semaine (monday, tuesday, ...)
 
-`Jours_exceptionnels`          : Facultatif. Les jours exceptionnels de travail si existants, à indiquer en anglais, et séparés par `,`. Par défaut, les jours **Samedi et Dimanche** sont exclus de la semaine de travail.
+> Par défaut, la semaine est définie sur 5 jours **du Lundi au Vendredi**. Utilisez les options `-add` et `-rm` pour adapter le programme à votre semaine.
 
-Devant le nom du jour, indiquer `-` pour un jour de non travail exceptionnel et `+` pour un jour de travail exceptionnel.
+### Exemple de syntaxe
 
-Exemple : `Ajouter \"+Saturday,-Monday\" en fin de ligne, si exceptionnellement vous travaillez le Samedi et ne travaillez pas le Lundi.`
+- `py internship_gratifications.py 01/05/2021 06/07/2021` — Calcul du nombre d'heures de travail pour la période indiquée
+- `py internship_gratifications.py 01/05/2021 06/07/2021 -hours 8 -grat 4.5` — Nombre d'heures fixées à 8h/j, gratification fixée à 4.5€/h  
+- `py internship_gratifications.py 01/05/2021 06/07/2021 -add saturday -rm monday tuesday` — Semaine de travail exceptionnelle : du **Mercredi au Samedi**
 
 ## Exemple d'utilisation
+
 ![Exemple d'utilisation](https://github.com/fm16191/internship_gratifications/blob/master/usage.png?raw=true)
 
-## Notes.
-Au dessus de 2 mois de stage (équivalent de 44 jours de 7 heures de stage), une gratification de minimum 3.9€ à l'heure est obligatoire
+## Notes
 
-Au dessus de 2 mois de stage, la possibilité de pouvoir poser des jours de congés est obligatoire, mais leur rémunération est facultative.
+Au dessus de 2 mois de stage (équivalent de 44 jours de 7 heures de stage), une gratification de **3.9€ à l'heure au minimum** est obligatoire.
 
-En savoir plus sur les articles du [service-public.fr](https://www.service-public.fr/professionnels-entreprises/vosdroits/F20559) ou [travail-emploi.gouv.fr](https://travail-emploi.gouv.fr/emploi-et-insertion/mesures-jeunes/article/les-stages-etudiants-en-milieu-professionnel)
+Au dessus de 2 mois de stage, la possibilité de poser des jours de congés est obligatoire, mais leur rémunération est facultative.
+
+En savoir plus sur les articles du [service-public.fr](https://www.service-public.fr/professionnels-entreprises/vosdroits/F20559) ou [travail-emploi.gouv.fr](https://travail-emploi.gouv.fr/emploi-et-insertion/mesures-jeunes/article/les-stages-etudiants-en-milieu-professionnel).
