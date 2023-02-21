@@ -52,7 +52,7 @@ parser.add_argument("date_fin", type=lambda s: datetime.strptime(s, '%d/%m/%Y'),
 
 parser.add_argument("-v", "--verbose", action="store_true", help="increase output verbosity")
 parser.add_argument("-hours", type=float, default=7, metavar='X', help="nombre d'heures de stage par jour (%(default)sh/j par défaut)")
-parser.add_argument("-grat", type=float, default=3.9, metavar='X.X', help="gratification horaire du stage (%(default)s€/h par défaut)")
+parser.add_argument("-grat", type=float, default=4.05, metavar='X.X', help="gratification horaire du stage (%(default)s€/h par défaut)")
 parser.add_argument("-add", nargs='+', choices={'saturday', 'sunday'}, metavar='weekday', help="ajouter des jours exceptionnels de travail (saturday, sunday)")
 parser.add_argument("-rm", nargs='+', choices={'monday', 'tuesday', 'wednesday', 'thursday', 'friday'}, metavar='weekday', help="retirer des jours de travail en semaine (monday, tuesday, ...)")
 

@@ -28,7 +28,7 @@ py internship_gratifications.py date_debut date_fin [-h] [-v] [-hours X] [-grat 
 - `-h`               : Affiche l'aide à l'utilisation
 - `-v`               : Exécution en mode verbeux
 - `-hours X`         : Nombre d'heures de stage par jour *(7h/j par défaut)*
-- `-grat X.X`        : Gratification horaire du stage *(3.9€/h par défaut)*
+- `-grat X.X`        : Gratification horaire du stage *(4.05€/h par défaut)*
 - `-add weekday ...` : ajouter des jours exceptionnels de travail (saturday, sunday)
 - `-rm weekday ...`  : retirer des jours de travail en semaine (monday, tuesday, ...)
 
@@ -46,7 +46,7 @@ py internship_gratifications.py date_debut date_fin [-h] [-v] [-hours X] [-grat 
 
 ## Notes
 
-Au dessus de 2 mois de stage (équivalent de 44 jours de 7 heures de stage), une gratification de **3.9€ à l'heure au minimum** est obligatoire.
+Au dessus de 2 mois de stage (équivalent de 44 jours de 7 heures de stage), une gratification de **4.05€ à l'heure au minimum** est obligatoire.
 
 Au dessus de 2 mois de stage, la possibilité de poser des jours de congés est obligatoire, mais leur rémunération est facultative.
 
