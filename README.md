@@ -31,6 +31,7 @@ py internship_gratifications.py date_debut date_fin [-h] [-v] [-hours X] [-grat 
 - `-grat X.X`        : Gratification horaire du stage *(4.05€/h par défaut)*
 - `-add weekday ...` : ajouter des jours exceptionnels de travail (saturday, sunday)
 - `-rm weekday ...`  : retirer des jours de travail en semaine (monday, tuesday, ...)
+- `-exclude date ... date_from-date_to` : retirer des jours / une plage de jours du stage (ex. fermetures, ponts ...)
 
 > Par défaut, la semaine est définie sur 5 jours **du Lundi au Vendredi**. Utilisez les options `-add` et `-rm` pour adapter le programme à votre semaine.
 
@@ -42,7 +43,7 @@ py internship_gratifications.py date_debut date_fin [-h] [-v] [-hours X] [-grat 
 
 ## Exemple d'utilisation
 
-![Exemple d'utilisation](https://github.com/fm16191/internship_gratifications/blob/master/usage.png?raw=true)
+![Exemple d'utilisation](usage.png)
 
 ## Notes
 
