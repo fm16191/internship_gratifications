@@ -49,7 +49,7 @@ def get_local_public_holidays(local_area, year):
 
 def get_date(dt):
     try:
-        return parse(dt)
+        return parse(dt, dayfirst=True)
     except ValueError:
         print(f"\033[31mError : \033[0m{dt} ne peut pas être interprété comme une date")
         return False
