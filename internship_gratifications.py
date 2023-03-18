@@ -1,8 +1,9 @@
-import sys, argparse
-from datetime import datetime
-from datetime import date
-from datetime import timedelta
+#!/usr/bin/env python3
 
+import argparse
+from datetime import date, timedelta
+from dateutil.parser import parse
+import sys
 import os
 import json
 import requests
@@ -45,10 +46,18 @@ def get_local_public_holidays(local_area, year):
 
 ######################## END FOR FRENCH LOCAL AREA ########################
 
+
+def get_date(dt):
+    try:
+        return parse(dt)
+    except ValueError:
+        print(f"\033[31mError : \033[0m{dt} ne peut pas être interprété comme une date")
+        return False
+
 # Parser initialization
 parser = argparse.ArgumentParser(description="Outil de calcul du nombre d'heures de travail et de la gratification résultante.")
-parser.add_argument("date_debut", type=lambda s: datetime.strptime(s, '%d/%m/%Y'), help="date de début de stage (JJ/MM/AAAA)")
-parser.add_argument("date_fin", type=lambda s: datetime.strptime(s, '%d/%m/%Y'), help="date de fin de stage (JJ/MM/AAAA)")
+parser.add_argument("date_debut", type=lambda s: get_date(s), help="date de début de stage (JJ/MM/AAAA)")
+parser.add_argument("date_fin", type=lambda s: get_date(s), help="date de fin de stage (JJ/MM/AAAA)")
 
 parser.add_argument("-v", "--verbose", action="store_true", help="increase output verbosity")
 parser.add_argument("-hours", type=float, default=7, metavar='X', help="nombre d'heures de stage par jour (%(default)sh/j par défaut)")
@@ -58,13 +67,8 @@ parser.add_argument("-rm", nargs='+', choices={'monday', 'tuesday', 'wednesday',
 
 # Input checking
 args = parser.parse_args()
-if args.date_debut < args.date_fin:
-    date_begin = args.date_debut
-    date_end = args.date_fin
-else:
-    date_end = args.date_debut
-    date_begin = args.date_fin
 
+date_begin, date_end = (args.date_debut, args.date_fin) if args.date_debut < args.date_fin else (args.date_fin, args.date_debut)
 
 hours_per_day = args.hours
 if hours_per_day <= 0:
@@ -76,7 +80,7 @@ if gratification < 0:
     print("\033[31mErreur :\033[0m la gratification doit être indiquée comme un flottant positif")
     sys.exit(1)
 
-# Working weekdays 
+# Working weekdays
 all_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 not_working_days = ["saturday", "sunday"] # Default week-end
 working_days_name = []
@@ -87,9 +91,7 @@ if args.add:
 if args.rm:
     not_working_days.extend(args.rm)
 
-for day in all_days:
-    if not day in not_working_days:
-        working_days_name.append(day)
+working_days_name.extend([day for day in all_days if day not in not_working_days])
 
 
 # Get local public holidays during years of the internship
@@ -113,29 +115,29 @@ while start_int_year <= end_int_year:
 working_days = 0
 completed_days = 0
 hours = 0
-free_days_off = 0
-free_days_off_dict = []
+free_days_off = []
 
 for i in range((date_end - date_begin).days + 1):
     day = date(date_begin.year, date_begin.month, date_begin.day) + timedelta(days=i)
     day_name = day.strftime("%A")
+    if day_name.lower() in not_working_days: continue
+
     day_strftime = day.strftime("%Y-%m-%d")
-    if not day_name.lower() in not_working_days :
-        if day_strftime in public_holidays_local:
-            free_days_off_dict.append(f"{public_holidays_local[day_strftime]} {day_strftime[:4]}")
-            free_days_off += 1
-            continue
-        hours += hours_per_day
+
+    if day_strftime in public_holidays_local:
+        free_days_off.append(f"{public_holidays_local[day_strftime]} ({day_name} {day.strftime('%d/%m/%Y')})")
+        continue
+    else:
         working_days += 1
         if day < date.today():
             completed_days += 1
-        # print(hours)
 
-working_hours_count = working_days*hours_per_day
-completed_hours_count = completed_days*hours_per_day
-gratification_count = working_days*hours_per_day*gratification
+hours = hours_per_day * working_days
+working_hours_count = working_days * hours_per_day
+completed_hours_count = completed_days * hours_per_day
+gratification_count = working_days * hours_per_day * gratification
 
-days_off = 0 if working_hours_count <=44*7 else working_hours_count/(22*7)*2.5
+days_off = 0 if working_hours_count <= 44 * 7 else working_hours_count / (22*7) * 2.5 # congés
 
 # Output
 
@@ -145,12 +147,12 @@ print(f"==== Jours de stage  : {', '.join(working_days_name)} ({len(working_days
 print(f"> Nombre total de jours de stage           : {working_days}")
 print(f"> Nombre total d'heures de stage           : {working_hours_count}")
 
-if free_days_off:
-    print(f"> Jours feriés pendant votre stage         : {free_days_off}")
+if len(free_days_off) > 0:
+    print(f"> Jours fériés pendant votre stage         : {len(free_days_off)}")
     if args.verbose:
-        for day_off in free_days_off_dict:
-            print('\t\033[;2m' + day_off + '\033[0m')
-    else:   print("\t\033[;2m(Relancez avec l'option -v pour voir le détail)\033[0m")
+        print('\n'.join([f"\t\033[;2m{day}\033[0m" for day in free_days_off]))
+    else:
+        print("\t\033[;2m(Relancez avec l'option -v pour voir le détail)\033[0m")
 
 print(f"> Estimation gratification totale          : {gratification_count:.1f}")
 print(f"> Estimation du nombre de jours de congé   : {days_off:.1f}")
@@ -158,4 +160,4 @@ print(f"> Estimation du nombre de jours de congé   : {days_off:.1f}")
 print(f"\n> Progression jours de stage               : {completed_days/working_days*100:.1f}% ({completed_days}/{working_days} | {working_days-completed_days} restants)")
 print(f"> Progression heures de stage              : {completed_hours_count/working_hours_count*100:.1f}% ({completed_hours_count}/{working_hours_count} | {working_hours_count-completed_hours_count} restantes)")
 print("\nDisclaimer: La gratification et les jours de congés sont des estimations, et peuvent différer en fonction de l'employeur.")
-print("\tPlus d'informations sur \033[;2mhttps://www.service-public.fr/professionnels-entreprises/vosdroits/F32131\033[0m")
+print("            Plus d'informations sur \033[;2mhttps://www.service-public.fr/professionnels-entreprises/vosdroits/F32131\033[0m")
