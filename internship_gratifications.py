@@ -64,6 +64,7 @@ parser.add_argument("-hours", type=float, default=7, metavar='X', help="nombre d
 parser.add_argument("-grat", type=float, default=4.05, metavar='X.X', help="gratification horaire du stage (%(default)s€/h par défaut)")
 parser.add_argument("-add", nargs='+', choices={'saturday', 'sunday'}, metavar='weekday', help="ajouter des jours exceptionnels de travail (saturday, sunday)")
 parser.add_argument("-rm", nargs='+', choices={'monday', 'tuesday', 'wednesday', 'thursday', 'friday'}, metavar='weekday', help="retirer des jours de travail en semaine (monday, tuesday, ...)")
+parser.add_argument("-exclude", nargs='+', metavar='dday day_from-day_to', default=[], help="retirer des dates (fermetures, ponts ...)")
 
 # Input checking
 args = parser.parse_args()
@@ -116,6 +117,19 @@ working_days = 0
 completed_days = 0
 hours = 0
 free_days_off = []
+exclude_days = []
+excluded_days = []
+
+for dt in args.exclude:
+    if '-' in dt:
+        db = get_date(dt.split('-')[0])
+        de = get_date(dt.split('-')[1])
+        if db == False or de == False:
+            continue
+        range_days = [(date(db.year, db.month, db.day) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((de - db).days + 1)]
+        exclude_days.extend(range_days)
+    elif d := get_date(dt):
+        exclude_days.append(d.strftime("%Y-%m-%d"))
 
 for i in range((date_end - date_begin).days + 1):
     day = date(date_begin.year, date_begin.month, date_begin.day) + timedelta(days=i)
@@ -126,6 +140,9 @@ for i in range((date_end - date_begin).days + 1):
 
     if day_strftime in public_holidays_local:
         free_days_off.append(f"{public_holidays_local[day_strftime]} ({day_name} {day.strftime('%d/%m/%Y')})")
+        continue
+    elif day_strftime in exclude_days:
+        excluded_days.append(f"{day_name} {day.strftime('%d/%m/%Y')}")
         continue
     else:
         working_days += 1
@@ -151,6 +168,13 @@ if len(free_days_off) > 0:
     print(f"> Jours fériés pendant votre stage         : {len(free_days_off)}")
     if args.verbose:
         print('\n'.join([f"\t\033[;2m{day}\033[0m" for day in free_days_off]))
+    else:
+        print("\t\033[;2m(Relancez avec l'option -v pour voir le détail)\033[0m")
+
+if len(excluded_days) > 0:
+    print(f"> Jours exclus pendant votre stage         : {len(excluded_days)}")
+    if args.verbose:
+        print('\n'.join([f"\t\033[;2m{day}\033[0m" for day in excluded_days]))
     else:
         print("\t\033[;2m(Relancez avec l'option -v pour voir le détail)\033[0m")
 
