@@ -2,6 +2,7 @@
 
 import argparse
 from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
 import sys
 import os
@@ -156,12 +157,20 @@ gratification_count = working_days * hours_per_day * gratification
 
 days_off = 0 if working_hours_count <= 44 * 7 else working_hours_count / (22*7) * 2.5 # congés
 
+r = relativedelta(date_end, date_begin)
+print(r.months + r.years*12)
+if (months := r.months + r.years*12) > 1:
+    print(months)
+    working_months = f" ({months} mois et {((date_end - relativedelta(months=months) - date_begin) ).days} jours)"
+else:
+    working_months = ""
+
 # Output
 
 print(f"\n==== Du {date_begin.strftime('%m/%d/%Y')} Au {date_end.strftime('%m/%d/%Y')}")
 print(f"==== {hours_per_day} heures par jour | {gratification}€ par heure")
 print(f"==== Jours de stage  : {', '.join(working_days_name)} ({len(working_days_name)} jours sur 7)\n")
-print(f"> Nombre total de jours de stage           : {working_days}")
+print(f"> Nombre total de jours de stage           : {working_days}{working_months}")
 print(f"> Nombre total d'heures de stage           : {working_hours_count}")
 
 if len(free_days_off) > 0:
