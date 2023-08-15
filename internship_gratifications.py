@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-import argparse
+from argparse import ArgumentParser
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
-import sys
-import os
-import json
-import requests
+from json import loads
+from os.path import exists
+from requests import get
+from sys import exit
 
 ######################## FRENCH LOCAL AREA ########################
 
@@ -27,16 +27,17 @@ local_area = "metropole"
 
 # Local area is needed for public holidays dates
 def get_local_public_holidays(local_area, year):
-    """ Store it into a file local public holidays for a year in an area 
-        if it doesn't already exist (request on api.gouv.fr) """
+    """Store it into a file local public holidays for a year in an area
+    if it doesn't already exist (request on api.gouv.fr)"""
     filename = f"{local_area}_{year}.json"
 
-    if not os.path.exists(filename):
-        if args.verbose: print(f"\033[;2mLoading public holidays for {local_area}_{year}...\033[0m")
+    if not exists(filename):
+        if args.verbose:
+            print(f"\033[;2mLoading public holidays for {local_area}_{year}...\033[0m")
 
         link = f"https://calendrier.api.gouv.fr/jours-feries/{filename.replace('_','/')}"
         try:
-            res = requests.get(link, allow_redirects=True)
+            res = get(link, allow_redirects=True)
             if not res.status_code == 200:
                 raise Exception(res.status_code)
             fw = open(filename, "wb")
@@ -56,7 +57,7 @@ def get_date(dt):
         return False
 
 # Parser initialization
-parser = argparse.ArgumentParser(description="Outil de calcul du nombre d'heures de travail et de la gratification résultante.")
+parser = ArgumentParser(description="Outil de calcul du nombre d'heures de travail et de la gratification résultante.")
 parser.add_argument("date_debut", type=lambda s: get_date(s), help="date de début de stage (JJ/MM/AAAA)")
 parser.add_argument("date_fin", type=lambda s: get_date(s), help="date de fin de stage (JJ/MM/AAAA)")
 
@@ -75,12 +76,12 @@ date_begin, date_end = (args.date_debut, args.date_fin) if args.date_debut < arg
 hours_per_day = args.hours
 if hours_per_day <= 0:
     print("\033[31mErreur :\033[0m le nombre d'heures de stage par jour doit être un entier positif")
-    sys.exit(1)
+    exit(1)
 
 gratification = args.grat
 if gratification < 0:
     print("\033[31mErreur :\033[0m la gratification doit être indiquée comme un flottant positif")
-    sys.exit(1)
+    exit(1)
 
 # Working weekdays
 all_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -104,9 +105,9 @@ while start_int_year <= end_int_year:
     filename = f"{local_area}_{start_int_year}.json"
     get_local_public_holidays(local_area, start_int_year)
 
-    if os.path.exists(filename):
+    if exists(filename):
         fo = open(filename, "r")
-        public_holidays_local.update(json.loads("".join(fo.readlines())))
+        public_holidays_local.update(loads("".join(fo.readlines())))
         fo.close()
 
     start_int_year += 1
@@ -158,9 +159,7 @@ gratification_count = working_days * hours_per_day * gratification
 days_off = 0 if working_hours_count <= 44 * 7 else working_hours_count / (22*7) * 2.5 # congés
 
 r = relativedelta(date_end, date_begin)
-print(r.months + r.years*12)
 if (months := r.months + r.years*12) > 1:
-    print(months)
     working_months = f" ({months} mois et {((date_end - relativedelta(months=months) - date_begin) ).days} jours)"
 else:
     working_months = ""
@@ -190,7 +189,9 @@ if len(excluded_days) > 0:
 print(f"> Estimation gratification totale          : {gratification_count:.1f}")
 print(f"> Estimation du nombre de jours de congé   : {days_off:.1f}")
 
-print(f"\n> Progression jours de stage               : {completed_days/working_days*100:.1f}% ({completed_days}/{working_days} | {working_days-completed_days} restants)")
-print(f"> Progression heures de stage              : {completed_hours_count/working_hours_count*100:.1f}% ({completed_hours_count}/{working_hours_count} | {working_hours_count-completed_hours_count} restantes)")
+print(f"\n> Progression jours de stage               : {completed_days/working_days*100:.1f}% ({completed_days}/{working_days}"
+    + f"| {working_days-completed_days} restants)")
+print(f"> Progression heures de stage              : {completed_hours_count/working_hours_count*100:.1f}%"
+    + f"({completed_hours_count}/{working_hours_count} | {working_hours_count-completed_hours_count} restantes)")
 print("\nDisclaimer: La gratification et les jours de congés sont des estimations, et peuvent différer en fonction de l'employeur.")
 print("            Plus d'informations sur \033[;2mhttps://www.service-public.fr/professionnels-entreprises/vosdroits/F32131\033[0m")
